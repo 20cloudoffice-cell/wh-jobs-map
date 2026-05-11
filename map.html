@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WH Jobs Map 〜どこに行けばどんなお仕事？〜</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: #f0f9ff;
+    }
+
+    header {
+      background: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 60%, #0ea5e9 100%);
+      color: white;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    header h1 { font-size: 1.2rem; font-weight: 700; }
+    header p { font-size: 0.8rem; opacity: 0.85; margin-top: 2px; }
+
+    .filters {
+      background: white;
+      border-bottom: 1px solid #e0f2fe;
+      padding: 10px 16px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .filters select, .filters input {
+      padding: 6px 10px;
+      border: 1px solid #bae6fd;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      color: #0c4a6e;
+      background: #f0f9ff;
+      outline: none;
+    }
+    .filters select:focus, .filters input:focus { border-color: #0ea5e9; }
+    .filters label { font-size: 0.75rem; color: #0369a1; font-weight: 600; }
+
+    .filter-group { display: flex; flex-direction: column; gap: 2px; }
+
+    .reset-btn {
+      padding: 6px 14px;
+      background: #38bdf8;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      margin-top: 14px;
+    }
+    .reset-btn:hover { background: #0ea5e9; }
+
+    #count-bar {
+      font-size: 0.8rem;
+      color: #0369a1;
+      margin-top: 14px;
+      white-space: nowrap;
+    }
+
+    #map {
+      flex: 1;
+      width: 100%;
+    }
+
+    /* InfoWindow カスタムスタイル */
+    .iw-wrap {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
+      width: 400px;
+      padding: 4px 4px 8px;
+    }
+    .iw-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #0c4a6e;
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+    .iw-location {
+      font-size: 0.78rem;
+      color: #0369a1;
+      margin-bottom: 4px;
+    }
+    .iw-contributor {
+      font-size: 0.74rem;
+      color: #94a3b8;
+      margin-bottom: 8px;
+    }
+    .iw-wage {
+      display: inline-block;
+      background: #e0f2fe;
+      color: #0284c7;
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 5px;
+      margin-bottom: 8px;
+      white-space: pre-line;
+    }
+    .iw-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      margin-bottom: 6px;
+    }
+    .iw-table tr { border-bottom: 1px solid #f1f5f9; }
+    .iw-table tr:last-child { border-bottom: none; }
+    .iw-label {
+      font-weight: 600;
+      color: #64748b;
+      padding: 5px 10px 5px 0;
+      white-space: nowrap;
+      vertical-align: top;
+      min-width: 90px;
+    }
+    .iw-value {
+      color: #334155;
+      line-height: 1.6;
+      padding: 5px 0;
+      vertical-align: top;
+    }
+    .iw-tag {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .tag-full { background: #dcfce7; color: #166534; }
+    .tag-part { background: #dbeafe; color: #1e40af; }
+    .tag-casual { background: #fef9c3; color: #854d0e; }
+    .iw-section {
+      margin-top: 10px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 8px;
+    }
+    .iw-section-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #0369a1;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .iw-requirements {
+      font-size: 0.8rem;
+      color: #334155;
+      background: #f8fafc;
+      border-radius: 6px;
+      padding: 8px 10px;
+      line-height: 1.7;
+      border-left: 3px solid #38bdf8;
+    }
+    .iw-links {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .iw-link-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .iw-link-maps {
+      background: #e0f2fe;
+      color: #0369a1;
+    }
+    .iw-link-search {
+      background: #f0fdf4;
+      color: #166534;
+    }
+    .iw-link-btn:hover { opacity: 0.8; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🌏 WH Jobs Map</h1>
+    <p>どこに行けばどんなお仕事？ワーホリ体験者の求人マップ</p>
+  </div>
+</header>
+
+<div class="filters">
+  <div class="filter-group">
+    <label>🌍 国</label>
+    <select id="filter-country" onchange="applyFilters()">
+      <option value="">すべての国</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>🏙 都市</label>
+    <select id="filter-city" onchange="applyFilters()">
+      <option value="">すべての都市</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>💼 勤務形態</label>
+    <select id="filter-type" onchange="applyFilters()">
+      <option value="">すべて</option>
+      <option value="フルタイム">フルタイム</option>
+      <option value="パートタイム">パートタイム</option>
+      <option value="カジュアル">カジュアル</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>🔍 フリーワード</label>
+    <input type="text" id="search" placeholder="お店名・仕事内容など" oninput="applyFilters()">
+  </div>
+  <button class="reset-btn" onclick="resetFilters()">リセット</button>
+  <span id="count-bar"></span>
+</div>
+
+<div id="map"></div>
+
+<script>
+const jobs = [
+  { country:"カナダ", city:"バンクーバー", company:"Fuji Corner", contributor:"浦田 彩美", wage:"$18＋チップ", workType:"フルタイム", english:"なんとか会話できるレベル", requirements:"jp canadaにて。資格や経験不問。オールラウンダー(2026.2末でclose)", lat:49.2827, lng:-123.1207 },
+  { country:"オーストラリア", city:"ブリスベン", company:"19 Dulacca St", contributor:"松浦雅人", wage:"$31.5", workType:"カジュアル", english:"日常会話レベル", requirements:"友達の紹介（面接等なし）", lat:-27.4698, lng:153.0251 },
+  { country:"オーストラリア", city:"メルボルン", company:"Norwood Cafe & Restaurant", contributor:"MIO", wage:"平日 $32.31 / 土日 $38.78 / 祝日 $64", workType:"カジュアル", english:"簡単な意思疎通可（早すぎると聞き取り不可）", requirements:"キッチンハンド", lat:-37.8136, lng:144.9631 },
+  { country:"ニュージーランド", city:"オークランド", company:"Ajisen Ramen (West Auckland) Restaurant", contributor:"星野大我", wage:"$23.5", workType:"パートタイム", english:"英検準一級・TOEIC800点相当", requirements:"キッチン集合で面接に呼ばれたが、人柄と英語力を評価してもらいFOHに変更", lat:-36.8485, lng:174.7633 },
+  { country:"オーストラリア", city:"メルボルン", company:"Tokyo Headspa Armadale", contributor:"Mana", wage:"平日 $28 / 土曜 $35.3 / 日曜 $53.1 / 祝日 $66.3", workType:"フルタイム", english:"TOEIC300点台", requirements:"✅日本での準備\n・Headspaを5回受けに行った（1回¥12,000）\n・Dry Headspa seminarの受講（¥50,000）\n\n✅オーナーと直接やりとり\n（出発10ヶ月前からオーナーに直接コンタクト）\n・企業側がどんな人を求めているのか擦り合わせ\n→できていること・準備すべきことを明確化\n\n・Headspa受講後、必要なスキルや\nPTとHeadspa therapistの違いなどを言語化し逆算して準備\n\n面接\n日本語8割、英語2割\nスキルチェック（マッサージ経験→寝た状態・座った状態でのスキル確認）", lat:-37.8560, lng:145.0197 },
+  { country:"オーストラリア", city:"ブリスベン", company:"Zeus Street Greek Westfield Chermside", contributor:"渡辺幸希", wage:"平日 $24.95 / 土 $31.19 / 日 $37.43", workType:"パートタイム", english:"TOEIC670点", requirements:"キッチンハンド（FOHのヘルプあり）", lat:-27.3882, lng:153.0285 },
+  { country:"オーストラリア", city:"シドニー", company:"19 Meadow Pl（オーペア）", contributor:"Mayu", wage:"週給 $300〜350", workType:"フルタイム", english:"英語テストL3レベル", requirements:"子供好き、軽い家事はできる、整理整頓できる、軽い料理できる、英語でのコミュニケーションがとれる", lat:-33.7711, lng:151.1151 },
+  { country:"オーストラリア", city:"シドニー", company:"52 Annangrove Rd（オーペア）", contributor:"", wage:"週給 $1,000", workType:"フルタイム", english:"英語テストL3レベル", requirements:"綺麗好き、子供好き、運転ができる、家事ができる", lat:-33.6845, lng:150.9638 },
+  { country:"オーストラリア", city:"メルボルン", company:"Coffee for the People Roasting Co.", contributor:"れいこ", wage:"平日 $32 / 休日 $38.5", workType:"カジュアル", english:"面接で暗記していたことを話せる程度", requirements:"条件なし。\nホストマザーが紹介してくれた、地元の焙煎所があるカフェ。\n気持ちを込めたメールを送信し採用に繋がりました。", lat:-37.7990, lng:144.9945 },
+  { country:"オーストラリア", city:"ウィッカム", company:"Rambla Bar & Bistro", contributor:"REO", wage:"$48", workType:"カジュアル", english:"日常英会話〜ビジネス英語", requirements:"all rounder / au pairと両立 / 88 daysカウント", lat:-20.7364, lng:116.8460 },
+  { country:"オーストラリア", city:"ウィッカム", company:"Grand Central Tavern Karratha", contributor:"REO", wage:"$48", workType:"カジュアル", english:"日常英会話〜ビジネス英語", requirements:"all rounder / 88 daysカウント", lat:-20.7374, lng:116.8480 },
+  { country:"オーストラリア", city:"ウィッカム", company:"Karratha International Hotel", contributor:"REO", wage:"$30", workType:"カジュアル", english:"日常英会話〜ビジネス英語", requirements:"フロント担当 / 88 daysカウント / 最低38時間/週 / トレーニング終了後フルタイム移行", lat:-20.7354, lng:116.8470 },
+  { country:"オーストラリア", city:"ウィッカム", company:"PITAYA CAFE", contributor:"REO", wage:"$31", workType:"カジュアル", english:"日常英会話〜ビジネス英語", requirements:"all rounder / 88 daysカウント / PRスポンサーシップ予定", lat:-20.7340, lng:116.8450 },
+  { country:"オーストラリア", city:"ウィッカム", company:"McDonald's Karratha", contributor:"REO", wage:"$35", workType:"カジュアル", english:"日常英会話〜ビジネス英語", requirements:"ドライブスルーオペレーター / 88 daysカウント", lat:-20.7330, lng:116.8440 },
+  { country:"カナダ", city:"バンクーバー", company:"Motonobu Udon", contributor:"きこ", wage:"$17.85", workType:"パートタイム", english:"中学英語", requirements:"jp canadaの求人サイトでの応募。\nサーバー経験があったことと、すぐに開始できる点が評価され、\n掛け持ちでもうどん屋ベースでシフトを組む条件でその場採用。", lat:49.2800, lng:-123.1150 },
+  { country:"カナダ", city:"バンクーバー", company:"Kanadell Japanese Bakery", contributor:"", wage:"$17.85", workType:"フルタイム", english:"中学英語", requirements:"jp canadaの求人サイトでの応募。\nWEB応募する際に、志望動機をメールに書く条件があったため熱意を書いたら送信後すぐに返信が来た。\n面接では「私も将来マーケットに出展してみたい」ことや店舗ができる生い立ちを話してくださり、その場採用。", lat:49.2760, lng:-123.1050 },
+  { country:"カナダ", city:"バンクーバー", company:"Tractor Everyday Healthy Foods", contributor:"", wage:"$18.75", workType:"フルタイム", english:"中学英語", requirements:"12月初めにWEB応募したが返信がなかったため、ドロップオフ(12月末)もした。\nドロップオフ後2〜3週間後にメールにて、他店舗が募集してるためそちらでも良いか連絡がきた。\n面接では忙しいことや、マルチタスクであることに対応できるか最初話された。\n自分の経験を伝え逆質問で、自分が採用されたら何日後に連絡をいただけるのかと自分の強みを伝えた。", lat:49.2853, lng:-123.1181 },
+  { country:"オーストラリア", city:"シドニー", company:"Suminoya Japanese BBQ Restaurant", contributor:"Kimika Kumagai", wage:"$24.95", workType:"パートタイム", english:"Pre-intermediate", requirements:"ランチ＆ディナー、週5〜6回", lat:-33.8688, lng:151.2093 },
+  { country:"オーストラリア", city:"クイーンズランド（Stanthorpe）", company:"sm farmers pty ltd（ファーム）", contributor:"", wage:"$30.19", workType:"カジュアル", english:"Pre-intermediate", requirements:"トマトpicking。毎日違うファームに行く形式。雇用元はsm farmers pty ltdだが実際は各ファームで作業。", lat:-28.6474, lng:151.9367 },
+  { country:"オーストラリア", city:"シドニー", company:"Crafted Ramen Misolado North Sydney", contributor:"Chiaki Ohara", wage:"$24.95", workType:"パートタイム", english:"簡単な日常会話なら答えられる", requirements:"オープニングスタッフ。キッチンとホール。\nRSA必須。日常会話レベルの英語力。", lat:-33.8404, lng:151.2064 },
+  { country:"オーストラリア", city:"シドニー", company:"Nikaido 二階堂 Japanese Yakiniku BBQ", contributor:"", wage:"平日 $30.35 / 土日 $36.42 / 祝日 $60.7", workType:"カジュアル", english:"簡単な日常会話なら答えられる", requirements:"土日出勤必須、飲食経験1年以上", lat:-33.8700, lng:151.2050 },
+  { country:"オーストラリア", city:"タスマニア", company:"Pinata farm（ファーム）", contributor:"", wage:"平日・土日 $30.35 / 祝日 1.5倍", workType:"カジュアル", english:"簡単な日常会話なら答えられる", requirements:"すぐタスマニアに来れること", lat:-42.0409, lng:147.0662 },
+  { country:"オーストラリア", city:"タスマニア", company:"Three peaks organics（ファーム）", contributor:"", wage:"$30.35", workType:"カジュアル", english:"簡単な日常会話なら答えられる", requirements:"ファームに見学に来ること。家族の面接があった。", lat:-41.9000, lng:147.1000 },
+  { country:"オーストラリア", city:"タスマニア", company:"Perfection Berries", contributor:"HIroki Imura", wage:"$28.26", workType:"カジュアル", english:"コミュニケーションは問題なくできるレベル", requirements:"ホステル滞在中に仲良くなったマレーシア人がFacebookで求人を発見し教えてくれた。\n求人の連絡先にメッセージを送りすぐ決定。\nレジュメ提出・インタビューは一切なし。", lat:-41.5000, lng:147.3000 },
+  { country:"オーストラリア", city:"タスマニア", company:"Nichols Poultry", contributor:"", wage:"$32.99", workType:"カジュアル", english:"コミュニケーションは問題なくできるレベル", requirements:"Perfection Berriesと同様に、エージェントに登録し紹介してもらう形式で就職。", lat:-42.1000, lng:146.8000 },
+  { country:"オーストラリア", city:"シドニー", company:"McDonald's Moorebank", contributor:"", wage:"$32.74", workType:"カジュアル", english:"コミュニケーションは問題なくできるレベル", requirements:"マクドナルドは合計3店舗にアプライ。すべてホームページからのアプライのみ受付。その他のアプライは受け付けていない模様。", lat:-33.9367, lng:150.9250 },
+  { country:"オーストラリア", city:"シドニー", company:"Qantas Domestic Business Lounge", contributor:"", wage:"平日 $25.98 / 土 $32.48 / 日 $38.97 / 祝 $51.96", workType:"パートタイム", english:"コミュニケーションは問題なくできるレベル", requirements:"知り合いの紹介という形で採用。求人自体は一般に公開されており、アプライできるようになっている。", lat:-33.9399, lng:151.1753 },
+  { country:"オーストラリア", city:"シドニー", company:"Barrel One Coffee Roasters Cromer", contributor:"Yuna", wage:"平日 $31 / 週末 $37 / 祝日 $62", workType:"フルタイム", english:"接客・日常会話・ネイティブとのコミュニケーションに問題ない程度", requirements:"すぐに働けるキッチンスタッフ募集", lat:-33.7357, lng:151.2888 },
+  { country:"オーストラリア", city:"クイーンズランド", company:"Glams Hair Lounge", contributor:"Miyu.O", wage:"歩合制", workType:"フルタイム", english:"当時は日常会話すら難しく感じていた", requirements:"SNSでメッセージを送ったらたまたま募集していた", lat:-26.6500, lng:153.0600 },
+  { country:"オーストラリア", city:"ビクトリア州（ハーフウェイ・クリーク）", company:"142 Browns Rd（ラズベリーファーム）", contributor:"", wage:"歩合制（1パネット190g $1.5）", workType:"カジュアル", english:"日常会話はやっとできるかどうか", requirements:"FacebookからLINEでやりとりして決まった。", lat:-37.0000, lng:146.9000 },
+  { country:"オーストラリア", city:"シドニー", company:"Sheraton Grand Sydney Hyde Park", contributor:"Amisa", wage:"$25.8〜", workType:"フルタイム", english:"TOEIC L&R 850点 / S&W 160点", requirements:"Marriottでの経験の有無", lat:-33.8729, lng:151.2108 },
+  { country:"オーストラリア", city:"ケアンズ", company:"DoubleTree by Hilton Hotel Cairns", contributor:"", wage:"$26.0〜", workType:"パートタイム", english:"TOEIC L&R 850点 / S&W 160点", requirements:"オーストラリアで既に5つ星ホテルでの経験があったため面接当日に採用決定。", lat:-16.9186, lng:145.7781 },
+  { country:"オーストラリア", city:"メルボルン", company:"All Are Welcome Thornbury", contributor:"ayu", wage:"$28", workType:"カジュアル", english:"初心者（渡航2週間後）", requirements:"友人の紹介からのトライアル", lat:-37.7620, lng:144.9985 },
+  { country:"オーストラリア", city:"メルボルン", company:"All Are Welcome", contributor:"", wage:"$25", workType:"カジュアル", english:"日常英会話", requirements:"Facebookで募集告知→レジュメ送付＋メッセージ送信→トライアル決定→3〜4日後から勤務開始", lat:-37.8010, lng:144.9950 },
+  { country:"オーストラリア", city:"メルボルン", company:"The Billy Cart Bread Co.", contributor:"", wage:"$28", workType:"カジュアル", english:"日常英会話", requirements:"レジュメを配りその場でトライアル採用", lat:-37.8050, lng:145.0020 },
+  { country:"オーストラリア", city:"タスマニア", company:"Badenville", contributor:"", wage:"$31", workType:"カジュアル", english:"日常英会話", requirements:"友人からの紹介", lat:-42.8821, lng:147.3272 },
+  { country:"オーストラリア", city:"ケアンズ", company:"The Quack Coffee", contributor:"もか", wage:"平日 $32 / 土曜 $38", workType:"カジュアル", english:"日常会話・接客英語は簡単ならできる", requirements:"5日/週、7〜8時間/日", lat:-16.9250, lng:145.7710 },
+  { country:"オーストラリア", city:"シドニー", company:"SYD Terminal 3", contributor:"志帆", wage:"$25.85（土曜1.25倍・日曜1.5倍）", workType:"パートタイム", english:"日常会話ができる程度", requirements:"知り合いの紹介", lat:-33.9461, lng:151.1772 },
+  { country:"オーストラリア", city:"シドニー", company:"Gate Gourmet", contributor:"Haruka", wage:"$31", workType:"カジュアル", english:"Intermediate", requirements:"友達の紹介なので条件なし", lat:-33.9350, lng:151.1650 },
+  { country:"オーストラリア", city:"メルボルン", company:"Mr Tulk Cafe", contributor:"emi", wage:"$27", workType:"カジュアル", english:"日常会話レベル", requirements:"レジュメ配り", lat:-37.8100, lng:144.9630 },
+  { country:"オーストラリア", city:"ケアンズ", company:"BBQ Boy", contributor:"西田あきら", wage:"平日 $31.19 / 週末 $37.43 / 祝日 $62.38", workType:"カジュアル", english:"CFER A2（基本的な指示は聞き取れる程度）", requirements:"2店舗で働ける / キッチンハンドの経験があること", lat:-16.9230, lng:145.7760 },
+  { country:"オーストラリア", city:"ケアンズ", company:"Sushi Boy & Coffee Girl", contributor:"", wage:"平日 $31.19 / 週末 $37.43 / 祝日 $62.38", workType:"カジュアル", english:"CFER A2（基本的な指示は聞き取れる程度）", requirements:"2店舗で働ける / キッチンハンドの経験があること（BBQ Boyと同オーナー）", lat:-16.9210, lng:145.7750 },
+  { country:"オーストラリア", city:"メルボルン", company:"Robert Spaulding Advertising（バリスタ）", contributor:"もちみゆ", wage:"平日 $32.34 / 土日 $38.78 / 祝日 $64.45", workType:"カジュアル", english:"Intermediate", requirements:"FacebookのBarista Melbourneグループでプロフィールを投稿。\n\n✅確認されるスキル\n・バリスタのスキルがあるか\n\n週4日、6:30〜15:30", lat:-37.9490, lng:145.0020 },
+];
+
+const countryFlag = { "オーストラリア":"🇦🇺", "カナダ":"🇨🇦", "ニュージーランド":"🇳🇿" };
+const workTypeTag = { "フルタイム":"tag-full", "パートタイム":"tag-part", "カジュアル":"tag-casual" };
+
+let map, markers = [], infoWindow;
+
+function initMap() {
+  map = new google.maps.Map(document.getElementById('map'), {
+    center: { lat: -25, lng: 133 },
+    zoom: 4,
+    mapTypeControl: false,
+    streetViewControl: false,
+  });
+
+  infoWindow = new google.maps.InfoWindow({ maxWidth: 440 });
+
+  // フィルターの選択肢を生成
+  const countries = [...new Set(jobs.map(j => j.country))].sort();
+  const countrySelect = document.getElementById('filter-country');
+  countries.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c; o.textContent = (countryFlag[c] || '🌍') + ' ' + c;
+    countrySelect.appendChild(o);
+  });
+
+  renderMarkers(jobs);
+}
+
+function renderMarkers(data) {
+  markers.forEach(m => m.setMap(null));
+  markers = [];
+
+  document.getElementById('count-bar').textContent = `${data.length} 件表示中`;
+
+  data.forEach(job => {
+    const marker = new google.maps.Marker({
+      position: { lat: job.lat, lng: job.lng },
+      map,
+      title: job.company,
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 10,
+        fillColor: job.workType === 'フルタイム' ? '#22c55e' : job.workType === 'パートタイム' ? '#3b82f6' : '#f59e0b',
+        fillOpacity: 0.9,
+        strokeColor: 'white',
+        strokeWeight: 2,
+      }
+    });
+
+    marker.addListener('click', () => {
+      const tag = workTypeTag[job.workType] || '';
+      const flag = countryFlag[job.country] || '🌍';
+      const reqHtml = (job.requirements || '').replace(/\n/g, '<br>');
+      const wageHtml = (job.wage || '').replace(/\n/g, '<br>');
+      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.company + ' ' + job.city)}`;
+      const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(job.company + ' ' + job.city)}`;
+      infoWindow.setContent(`
+        <div class="iw-wrap">
+          <div class="iw-title">${job.company}</div>
+          <div class="iw-location">${flag} ${job.country} › ${job.city}</div>
+          ${job.contributor ? `<div class="iw-contributor">👤 情報提供: ${job.contributor}</div>` : '<div class="iw-contributor">👤 情報提供者不明</div>'}
+          <table class="iw-table">
+            <tr>
+              <td class="iw-label">💰 時給</td>
+              <td class="iw-value">${wageHtml}</td>
+            </tr>
+            <tr>
+              <td class="iw-label">💼 勤務形態</td>
+              <td class="iw-value"><span class="iw-tag ${tag}">${job.workType || '−'}</span></td>
+            </tr>
+            <tr>
+              <td class="iw-label">🗣 英語レベル</td>
+              <td class="iw-value">${job.english || '−'}</td>
+            </tr>
+          </table>
+          <div class="iw-links">
+            <a class="iw-link-btn iw-link-maps" href="${mapsUrl}" target="_blank">📍 Googleマップで見る</a>
+            <a class="iw-link-btn iw-link-search" href="${searchUrl}" target="_blank">🔍 お店を検索</a>
+          </div>
+          <div class="iw-section">
+            <div class="iw-section-label">📋 採用・仕事内容</div>
+            <div class="iw-requirements">${reqHtml || '情報なし'}</div>
+          </div>
+        </div>
+      `);
+      infoWindow.open(map, marker);
+    });
+
+    markers.push(marker);
+  });
+
+  // 表示データに合わせてマップをフィット
+  if (data.length > 0) {
+    const bounds = new google.maps.LatLngBounds();
+    data.forEach(job => bounds.extend({ lat: job.lat, lng: job.lng }));
+    map.fitBounds(bounds);
+  }
+}
+
+function getFiltered() {
+  const country = document.getElementById('filter-country').value;
+  const city = document.getElementById('filter-city').value;
+  const type = document.getElementById('filter-type').value;
+  const search = document.getElementById('search').value.toLowerCase();
+
+  return jobs.filter(j => {
+    if (country && j.country !== country) return false;
+    if (city && j.city !== city) return false;
+    if (type && j.workType !== type) return false;
+    if (search) {
+      const hay = (j.company + j.city + j.country + (j.requirements||'') + j.wage + (j.contributor||'')).toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+}
+
+function applyFilters() {
+  updateCityOptions();
+  renderMarkers(getFiltered());
+}
+
+function updateCityOptions() {
+  const selectedCountry = document.getElementById('filter-country').value;
+  const cities = [...new Set(
+    jobs.filter(j => !selectedCountry || j.country === selectedCountry).map(j => j.city)
+  )].sort();
+  const citySelect = document.getElementById('filter-city');
+  const current = citySelect.value;
+  citySelect.innerHTML = '<option value="">すべての都市</option>' +
+    cities.map(c => `<option value="${c}"${c === current ? ' selected' : ''}>${c}</option>`).join('');
+}
+
+function resetFilters() {
+  document.getElementById('filter-country').value = '';
+  document.getElementById('filter-city').value = '';
+  document.getElementById('filter-type').value = '';
+  document.getElementById('search').value = '';
+  updateCityOptions();
+  renderMarkers(jobs);
+}
+
+// 凡例
+window.addEventListener('load', () => {
+  const legend = document.createElement('div');
+  legend.style.cssText = 'background:white;padding:8px 12px;margin:8px;border-radius:8px;font-size:0.75rem;box-shadow:0 1px 4px rgba(0,0,0,0.15);line-height:1.8;';
+  legend.innerHTML = `
+    <strong>凡例</strong><br>
+    <span style="color:#22c55e">●</span> フルタイム
+    <span style="color:#3b82f6">●</span> パートタイム
+    <span style="color:#f59e0b">●</span> カジュアル
+  `;
+  map.controls[google.maps.ControlPosition.BOTTOM_LEFT].push(legend);
+});
+</script>
+
+<script>
+// Googleマップのエラーをページ上に表示
+window.gm_authFailure = function() {
+  document.getElementById('map').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;color:red;font-size:18px;gap:12px"><strong>認証エラー (gm_authFailure)</strong><p>APIキーが無効か、請求が有効でないか、APIが無効です。</p></div>';
+};
+window.addEventListener('error', function(e) {
+  if (e.message && e.message.includes('google')) {
+    document.getElementById('map').innerHTML = '<div style="padding:20px;color:red">JSエラー: ' + e.message + '</div>';
+  }
+});
+</script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDAK2pNYknXR1KOgFC-YypNDOaLDYR3UNo&callback=initMap&language=ja" async defer></script>
+
+</body>
+</html>

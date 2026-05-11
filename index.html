@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WH Jobs 〜どこに行けばどんなお仕事がある？〜</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
+      background: #f0f9ff;
+      color: #2d3748;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 60%, #0ea5e9 100%);
+      color: white;
+      padding: 32px 24px 28px;
+      text-align: center;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; letter-spacing: -0.5px; }
+    header p { margin-top: 8px; font-size: 0.95rem; opacity: 0.85; }
+
+    .stats-bar {
+      background: white;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 12px 24px;
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      font-size: 0.85rem;
+      color: #718096;
+    }
+    .stats-bar span strong { color: #0ea5e9; font-size: 1rem; }
+
+    .filters {
+      max-width: 1100px;
+      margin: 24px auto 0;
+      padding: 0 20px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+      min-width: 140px;
+    }
+    .filter-group label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #718096;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .filter-group select,
+    .filter-group input {
+      padding: 8px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: white;
+      font-size: 0.9rem;
+      color: #2d3748;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .filter-group select:focus,
+    .filter-group input:focus {
+      border-color: #38bdf8;
+    }
+
+    .reset-btn {
+      margin-top: 20px;
+      padding: 8px 18px;
+      background: #38bdf8;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .reset-btn:hover { background: #0ea5e9; }
+
+    .result-count {
+      max-width: 1100px;
+      margin: 16px auto 0;
+      padding: 0 20px;
+      font-size: 0.85rem;
+      color: #718096;
+    }
+
+    .grid {
+      max-width: 1100px;
+      margin: 16px auto 40px;
+      padding: 0 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      overflow: hidden;
+      transition: transform 0.15s, box-shadow 0.15s;
+      display: flex;
+      flex-direction: column;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    }
+
+    .card-header {
+      padding: 16px 18px 12px;
+      border-bottom: 1px solid #f7fafc;
+    }
+    .card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1a202c;
+      line-height: 1.3;
+    }
+    .card-location {
+      margin-top: 4px;
+      font-size: 0.8rem;
+      color: #718096;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .card-location .flag { font-size: 1rem; }
+
+    .card-body { padding: 14px 18px; flex: 1; }
+
+    .wage-badge {
+      display: inline-block;
+      background: #e0f2fe;
+      color: #0284c7;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
+
+    .info-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-size: 0.82rem;
+      align-items: flex-start;
+    }
+    .info-label {
+      flex-shrink: 0;
+      font-weight: 600;
+      color: #718096;
+      min-width: 72px;
+    }
+    .info-value { color: #4a5568; line-height: 1.5; }
+
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .tag-full { background: #c6f6d5; color: #276749; }
+    .tag-part { background: #bee3f8; color: #2b6cb0; }
+    .tag-casual { background: #fefcbf; color: #744210; }
+
+    .card-footer {
+      padding: 10px 18px 14px;
+      border-top: 1px solid #f7fafc;
+    }
+    .apply-detail {
+      font-size: 0.8rem;
+      color: #718096;
+      line-height: 1.6;
+      max-height: 80px;
+      overflow: hidden;
+      position: relative;
+      cursor: pointer;
+    }
+    .apply-detail.expanded { max-height: none; }
+    .apply-detail::after {
+      content: '…もっと見る';
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      background: white;
+      padding-left: 6px;
+      color: #0ea5e9;
+      font-weight: 600;
+    }
+    .apply-detail.expanded::after { display: none; }
+    .apply-detail.short::after { display: none; }
+
+    .no-results {
+      grid-column: 1/-1;
+      text-align: center;
+      padding: 60px 20px;
+      color: #718096;
+      font-size: 1.1rem;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 0.8rem;
+      color: #a0aec0;
+      border-top: 1px solid #e2e8f0;
+      background: white;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🌏 WH Jobs — どこに行けばどんなお仕事？</h1>
+  <p>ワーキングホリデー体験者のリアルな仕事情報まとめ</p>
+</header>
+
+<div class="stats-bar">
+  <span id="stat-total">全 <strong>—</strong> 件</span>
+  <span id="stat-countries">対象国 <strong>—</strong> か国</span>
+  <span id="stat-cities">都市数 <strong>—</strong> 都市</span>
+</div>
+
+<div class="filters">
+  <div class="filter-group" style="flex: 2; min-width: 200px;">
+    <label>🔍 フリーワード検索</label>
+    <input type="text" id="search" placeholder="お店名・仕事内容など">
+  </div>
+  <div class="filter-group">
+    <label>🌍 国</label>
+    <select id="filter-country">
+      <option value="">すべての国</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>🏙 都市</label>
+    <select id="filter-city">
+      <option value="">すべての都市</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>💼 勤務形態</label>
+    <select id="filter-type">
+      <option value="">すべて</option>
+      <option value="フルタイム">フルタイム</option>
+      <option value="パートタイム">パートタイム</option>
+      <option value="カジュアル">カジュアル</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>🇬🇧 英語レベル</label>
+    <select id="filter-english">
+      <option value="">すべてのレベル</option>
+    </select>
+  </div>
+  <button class="reset-btn" onclick="resetFilters()">リセット</button>
+</div>
+
+<div class="result-count" id="result-count"></div>
+
+<div class="grid" id="grid"></div>
+
+<footer>データ出典: スプレッドシート（体験者投稿）</footer>
+
+<script>
+const raw = [
+  { country:"カナダ", city:"バンクーバー", company:"Fuji Corner", wage:"$18+チップ", workType:"フルタイム", english:"なんとか会話できるレベル", howToApply:"jp canadaにて応募。資格や経験不問。オールラウンダー募集。" },
+  { country:"オーストラリア", city:"ブリスベン", company:"19 Dulacca St", wage:"$31.5", workType:"カジュアル", english:"日常会話レベル", howToApply:"友達の紹介（面接等なし）" },
+  { country:"オーストラリア", city:"メルボルン", company:"Norwood Cafe & Restaurant", wage:"平日$32.31 / 土日$38.78 / 祝日$64", workType:"カジュアル", english:"簡単な意思疎通可（早すぎると聞き取り不可）", howToApply:"キッチンハンド募集" },
+  { country:"ニュージーランド", city:"オークランド", company:"Ajisen Ramen (West Auckland)", wage:"$23.5", workType:"パートタイム", english:"英検準一級・TOEIC800点相当", howToApply:"キッチン集合で面接。人柄と英語力を評価しFOHに変更。" },
+  { country:"オーストラリア", city:"メルボルン", company:"Tokyo Headspa Armadale", wage:"平日$28 / 土$35.3 / 日$53.1 / 祝$66.3", workType:"フルタイム", english:"TOEIC300点台", howToApply:"出発10ヶ月前からオーナーと直接コンタクト。日本でHeadspa受講・スキルチェック（マッサージ経験あり）。面接は日本語8割英語2割。" },
+  { country:"オーストラリア", city:"ブリスベン", company:"Zeus Street Greek Westfield Chermside", wage:"平日$24.95 / 土$31.19 / 日$37.43", workType:"パートタイム", english:"TOEIC670点", howToApply:"キッチンハンド（FOHのヘルプあり）" },
+  { country:"オーストラリア", city:"シドニー", company:"19 Meadow Pl（オーペア）", wage:"週給$300〜350", workType:"フルタイム", english:"英語テストL3レベル", howToApply:"子供好き、軽い家事・料理できる、英語コミュニケーション可" },
+  { country:"オーストラリア", city:"シドニー", company:"52 Annangrove Rd（オーペア）", wage:"週給$1,000", workType:"フルタイム", english:"英語テストL3レベル", howToApply:"綺麗好き、子供好き、運転・家事ができる" },
+  { country:"オーストラリア", city:"メルボルン", company:"Coffee for the People Roasting Co.", wage:"平日$32 / 休日$38.5", workType:"カジュアル", english:"面接で暗記していたことを話せる程度", howToApply:"条件なし。ホストマザーの紹介。気持ちを込めたメールを送信し採用。" },
+  { country:"オーストラリア", city:"ウィッカム（カラサ）", company:"Rambla Bar & Bistro", wage:"$48", workType:"カジュアル", english:"日常英会話〜ビジネス英語", howToApply:"オールラウンダー、au pairと両立、88 daysカウント" },
+  { country:"オーストラリア", city:"ウィッカム（カラサ）", company:"Grand Central Tavern Karratha", wage:"$48", workType:"カジュアル", english:"日常英会話〜ビジネス英語", howToApply:"オールラウンダー、88 daysカウント" },
+  { country:"オーストラリア", city:"ウィッカム（カラサ）", company:"Karratha International Hotel", wage:"$30", workType:"カジュアル", english:"日常英会話〜ビジネス英語", howToApply:"フロント担当、88 daysカウント、最低38時間/週、研修終了後フルタイム移行" },
+  { country:"オーストラリア", city:"ウィッカム（カラサ）", company:"PITAYA CAFE", wage:"$31", workType:"カジュアル", english:"日常英会話〜ビジネス英語", howToApply:"オールラウンダー、88 daysカウント、PRスポンサーシップ予定" },
+  { country:"オーストラリア", city:"ウィッカム（カラサ）", company:"McDonald's Karratha", wage:"$35", workType:"カジュアル", english:"日常英会話〜ビジネス英語", howToApply:"ドライブスルーオペレーター、88 daysカウント" },
+  { country:"カナダ", city:"バンクーバー", company:"Motonobu Udon", wage:"$17.85", workType:"パートタイム", english:"中学英語", howToApply:"jp canadaの求人サイトで応募。サーバー経験あり・すぐに勤務開始可でその場採用。" },
+  { country:"カナダ", city:"バンクーバー", company:"Kanadell Japanese Bakery", wage:"$17.85", workType:"フルタイム", english:"中学英語", howToApply:"jp canadaで応募。志望動機をメールに書く条件あり。熱意を書いたら送信後すぐ返信が来てその場採用。" },
+  { country:"カナダ", city:"バンクーバー", company:"Tractor Everyday Healthy Foods - Marine Building", wage:"$18.75", workType:"フルタイム", english:"中学英語", howToApply:"12月初めにWEB応募→返信なし→ドロップオフ→2〜3週間後に他店舗を紹介される。面接で経験をアピールし逆質問も実施。" },
+  { country:"オーストラリア", city:"シドニー", company:"Suminoya Japanese BBQ Restaurant", wage:"$24.95", workType:"パートタイム", english:"Pre-intermediate", howToApply:"ランチ&ディナー、週5〜6回" },
+  { country:"オーストラリア", city:"クイーンズランド（スタントホープ）", company:"sm farmers pty ltd（ファーム）", wage:"$30.19", workType:"カジュアル", english:"Pre-intermediate", howToApply:"トマトpicking。毎日違うファームに行く形式。" },
+  { country:"オーストラリア", city:"シドニー", company:"Crafted Ramen Misolado North Sydney", wage:"$24.95", workType:"パートタイム", english:"簡単な日常会話ならできる", howToApply:"オープニングスタッフ募集。キッチンとホール。RSA必須、日常会話レベルの英語力。" },
+  { country:"オーストラリア", city:"シドニー", company:"Nikaido 二階堂 Japanese Yakiniku BBQ Restaurant", wage:"平日$30.35 / 土日$36.42 / 祝日$60.7", workType:"カジュアル", english:"簡単な日常会話ならできる", howToApply:"土日出勤必須、飲食経験1年以上" },
+  { country:"オーストラリア", city:"タスマニア", company:"Pinata farm（ファーム）", wage:"平日・土日$30.35 / 祝日1.5倍", workType:"カジュアル", english:"簡単な日常会話ならできる", howToApply:"すぐにタスマニアに来れること" },
+  { country:"オーストラリア", city:"タスマニア", company:"Three peaks organics（ファーム）", wage:"$30.35", workType:"カジュアル", english:"簡単な日常会話ならできる", howToApply:"ファームに見学に来ること。家族の面接あり。" },
+  { country:"オーストラリア", city:"タスマニア", company:"Perfection Berries", wage:"$28.26", workType:"カジュアル", english:"コミュニケーションは問題なくできるレベル", howToApply:"ホステルで知り合ったマレーシア人から情報収集→求人連絡先にメッセージ→すぐに決定。レジュメ不要、面接なし。エージェント経由で派遣。" },
+  { country:"オーストラリア", city:"タスマニア", company:"Nichols Poultry", wage:"$32.99", workType:"カジュアル", english:"コミュニケーションは問題なくできるレベル", howToApply:"エージェントに登録し紹介してもらう形式。" },
+  { country:"オーストラリア", city:"シドニー", company:"McDonald's Moorebank", wage:"$32.74", workType:"カジュアル", english:"コミュニケーションは問題なくできるレベル", howToApply:"ホームページからのみアプライ可（3店舗に申請）。" },
+  { country:"オーストラリア", city:"シドニー", company:"Qantas Domestic Business Lounge", wage:"平日$25.98 / 土$32.48 / 日$38.97 / 祝$51.96", workType:"パートタイム", english:"コミュニケーションは問題なくできるレベル", howToApply:"知り合いの紹介で採用。求人自体は一般公開されている。" },
+  { country:"オーストラリア", city:"シドニー", company:"Barrel One Coffee Roasters Cromer", wage:"平日$31 / 週末$37", workType:"フルタイム", english:"接客・日常会話・ネイティブスタッフとのコミュニケーションに問題ない程度", howToApply:"すぐに働けるキッチンスタッフ募集" },
+  { country:"オーストラリア", city:"クイーンズランド", company:"Glams Hair Lounge", wage:"歩合制", workType:"フルタイム", english:"日常会話は難しく感じるレベル", howToApply:"SNSでメッセージを送ったらたまたま募集していた" },
+  { country:"オーストラリア", city:"ハーフウェイ・クリーク", company:"142 Browns Rd（ラズベリーファーム）", wage:"歩合制（1パネット190g = $1.5）", workType:"カジュアル", english:"日常会話はやっとできるかどうか", howToApply:"FacebookからLINEでやりとりして決まった。5:30ピックアップ、6:30スタート。" },
+  { country:"オーストラリア", city:"シドニー", company:"Sheraton Grand Sydney Hyde Park", wage:"$25.8〜", workType:"フルタイム", english:"TOEIC L&R 850点 / S&W 160点", howToApply:"Marriottでの経験の有無が重要。Front Desk（フルタイム）& Executive Club Lounge（パートタイム）。" },
+  { country:"オーストラリア", city:"ケアンズ", company:"DoubleTree by Hilton Hotel Cairns", wage:"$26.0〜", workType:"パートタイム", english:"TOEIC L&R 850点 / S&W 160点", howToApply:"オーストラリアで既に5つ星ホテルの経験があったため面接当日に採用決定。" },
+  { country:"オーストラリア", city:"メルボルン", company:"All Are Welcome Thornbury", wage:"$28", workType:"カジュアル", english:"初心者（渡航2週間後）", howToApply:"友人の紹介からのトライアル" },
+  { country:"オーストラリア", city:"メルボルン", company:"All Are Welcome", wage:"$25", workType:"カジュアル", english:"日常英会話", howToApply:"Facebookで募集告知あり→レジュメ送付＋メッセージ送信→トライアル決定→3〜4日後から勤務開始" },
+  { country:"オーストラリア", city:"メルボルン", company:"The Billy Cart Bread Co.", wage:"$28", workType:"カジュアル", english:"日常英会話", howToApply:"レジュメを配りその場でトライアル採用" },
+  { country:"オーストラリア", city:"タスマニア", company:"Badenville", wage:"$31", workType:"カジュアル", english:"日常英会話", howToApply:"友人からの紹介" },
+  { country:"オーストラリア", city:"ケアンズ", company:"The Quack Coffee", wage:"平日$32 / 土曜$38", workType:"カジュアル", english:"日常会話・接客英語は簡単ならできる", howToApply:"週5日、7〜8時間/日" },
+  { country:"オーストラリア", city:"シドニー", company:"SYD Terminal 3", wage:"$25.85（土曜1.25倍、日曜1.5倍）", workType:"パートタイム", english:"日常会話ができる程度", howToApply:"知り合いの紹介" },
+  { country:"オーストラリア", city:"シドニー", company:"Gate Gourmet", wage:"$31", workType:"カジュアル", english:"Intermediate", howToApply:"友達の紹介なので条件なし" },
+  { country:"オーストラリア", city:"メルボルン", company:"Mr Tulk Cafe", wage:"$27", workType:"カジュアル", english:"日常会話レベル", howToApply:"レジュメ配り" },
+  { country:"オーストラリア", city:"ケアンズ", company:"BBQ Boy", wage:"平日$31.19 / 週末$37.43 / 祝日$62.38", workType:"カジュアル", english:"CFER A2（基本的な指示は聞き取れる程度）", howToApply:"2店舗で働ける／キッチンハンド経験あること。同じオーナーが2店舗を経営。" },
+  { country:"オーストラリア", city:"ケアンズ", company:"Sushi Boy & Coffee Girl", wage:"平日$31.19 / 週末$37.43 / 祝日$62.38", workType:"カジュアル", english:"CFER A2（基本的な指示は聞き取れる程度）", howToApply:"2店舗で働ける／キッチンハンド経験あること" },
+  { country:"オーストラリア", city:"メルボルン", company:"Robert Spaulding Advertising（バリスタ）", wage:"平日$32.34 / 土日$38.78 / 祝日$64.45", workType:"カジュアル", english:"Intermediate", howToApply:"FacebookのBarista Melbourneグループでプロフィールを投稿してバリスタスキルをアピール。週4日、6:30〜15:30。" },
+];
+
+const countryFlag = {
+  "オーストラリア": "🇦🇺",
+  "カナダ": "🇨🇦",
+  "ニュージーランド": "🇳🇿",
+};
+
+const workTypeTag = {
+  "フルタイム": "tag-full",
+  "パートタイム": "tag-part",
+  "カジュアル": "tag-casual",
+};
+
+function renderCards(data) {
+  const grid = document.getElementById('grid');
+  document.getElementById('result-count').textContent = `${data.length} 件表示中`;
+
+  if (data.length === 0) {
+    grid.innerHTML = '<div class="no-results">条件に合う仕事が見つかりませんでした。</div>';
+    return;
+  }
+
+  grid.innerHTML = data.map((j, i) => {
+    const flag = countryFlag[j.country] || '🌍';
+    const tagClass = workTypeTag[j.workType] || '';
+    const applyLen = j.howToApply.length;
+
+    return `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">${j.company}</div>
+        <div class="card-location">
+          <span class="flag">${flag}</span>
+          ${j.country} &nbsp;›&nbsp; ${j.city}
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="wage-badge">💴 ${j.wage}</div>
+        <div class="info-row">
+          <span class="info-label">勤務形態</span>
+          <span class="info-value"><span class="tag ${tagClass}">${j.workType}</span></span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">英語レベル</span>
+          <span class="info-value">${j.english}</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <div class="info-row" style="margin-bottom:4px">
+          <span class="info-label">応募方法</span>
+        </div>
+        <div class="apply-detail ${applyLen < 80 ? 'short' : ''}" data-idx="${i}" onclick="toggleExpand(this)">${j.howToApply}</div>
+      </div>
+    </div>
+    `;
+  }).join('');
+}
+
+function toggleExpand(el) {
+  if (el.classList.contains('short')) return;
+  el.classList.toggle('expanded');
+}
+
+function getFiltered() {
+  const search = document.getElementById('search').value.toLowerCase();
+  const country = document.getElementById('filter-country').value;
+  const city = document.getElementById('filter-city').value;
+  const type = document.getElementById('filter-type').value;
+  const english = document.getElementById('filter-english').value;
+
+  return raw.filter(j => {
+    if (country && j.country !== country) return false;
+    if (city && j.city !== city) return false;
+    if (type && j.workType !== type) return false;
+    if (english && j.english !== english) return false;
+    if (search) {
+      const hay = (j.company + j.city + j.country + j.howToApply + j.wage).toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+}
+
+function applyFilters() {
+  renderCards(getFiltered());
+}
+
+function resetFilters() {
+  document.getElementById('search').value = '';
+  document.getElementById('filter-country').value = '';
+  document.getElementById('filter-city').value = '';
+  document.getElementById('filter-type').value = '';
+  document.getElementById('filter-english').value = '';
+  updateCityOptions();
+  applyFilters();
+}
+
+function updateCityOptions() {
+  const selectedCountry = document.getElementById('filter-country').value;
+  const cities = [...new Set(
+    raw.filter(j => !selectedCountry || j.country === selectedCountry).map(j => j.city)
+  )].sort();
+  const citySelect = document.getElementById('filter-city');
+  const current = citySelect.value;
+  citySelect.innerHTML = '<option value="">すべての都市</option>' +
+    cities.map(c => `<option value="${c}"${c === current ? ' selected' : ''}>${c}</option>`).join('');
+}
+
+// Init
+const countries = [...new Set(raw.map(j => j.country))].sort();
+const countrySelect = document.getElementById('filter-country');
+countries.forEach(c => {
+  const o = document.createElement('option');
+  o.value = c; o.textContent = (countryFlag[c] || '🌍') + ' ' + c;
+  countrySelect.appendChild(o);
+});
+
+const englishLevels = [...new Set(raw.map(j => j.english))].sort();
+const englishSelect = document.getElementById('filter-english');
+englishLevels.forEach(e => {
+  const o = document.createElement('option');
+  o.value = e; o.textContent = e;
+  englishSelect.appendChild(o);
+});
+
+updateCityOptions();
+
+// Stats
+document.getElementById('stat-total').innerHTML = `全 <strong>${raw.length}</strong> 件`;
+document.getElementById('stat-countries').innerHTML = `対象国 <strong>${countries.length}</strong> か国`;
+const allCities = [...new Set(raw.map(j => j.city))];
+document.getElementById('stat-cities').innerHTML = `都市数 <strong>${allCities.length}</strong> 都市`;
+
+// Event listeners
+document.getElementById('search').addEventListener('input', applyFilters);
+document.getElementById('filter-country').addEventListener('change', () => { updateCityOptions(); applyFilters(); });
+document.getElementById('filter-city').addEventListener('change', applyFilters);
+document.getElementById('filter-type').addEventListener('change', applyFilters);
+document.getElementById('filter-english').addEventListener('change', applyFilters);
+
+renderCards(raw);
+</script>
+</body>
+</html>
